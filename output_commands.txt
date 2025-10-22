@@ -1,11 +1,9 @@
-PUSH 10
-POPR
-PUSH 20
-JUMP 2
-MUL
+PUSH 5
+PUSH 3
+JUMP :label_1
+:label_1
 PRINT
-PUSH 50
-PUSHR
+EXIT
+:label_0
 MUL
-ADD
-PRINT
+JUMP :label_2

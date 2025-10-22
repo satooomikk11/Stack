@@ -11,9 +11,49 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
         return;
     }
     
+    // создаем обратную таблицу меток для красивого вывода
+    int labelCount = 0;
+    int labelPositions[100];
+    
+    // сначала находим все позиции, на которые ссылаются JUMP команды
+    for (int i = 0; i < commandCount; i++)
+    {
+        if (commands[i] == OP_JUMP && i + 1 < commandCount)
+        {
+            int target = commands[i + 1];
+            if (target >= 0 && target < commandCount)
+            {
+                // проверяем, есть ли уже такая метка
+                int found = 0;
+                for (int j = 0; j < labelCount; j++)
+                {
+                    if (labelPositions[j] == target)
+                    {
+                        found = 1;
+                        break;
+                    }
+                }
+                if (!found && labelCount < 100)
+                {
+                    labelPositions[labelCount++] = target;
+                }
+            }
+        }
+    }
+    
     int i = 0;
     while (i < commandCount)
     {
+        // проверяем, нужно ли вывести метку
+        for (int j = 0; j < labelCount; j++)
+        {
+            if (labelPositions[j] == i)
+            {
+                fprintf(file, ":label_%d\n", j);
+                break;
+            }
+        }
+        
         int opcode = commands[i];
         
         switch (opcode)
@@ -21,21 +61,30 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
             case OP_JUMP:
                 if (i + 1 < commandCount)
                 {
-                    int offset = commands[i + 1];
-                    fprintf(file, "JUMP %d\n", offset);
-                    i += 2;
+                    int target = commands[i + 1];
+                    // ищем имя метки для этого target
+                    for (int j = 0; j < labelCount; j++)
+                    {
+                        if (labelPositions[j] == target)
+                        {
+                            fprintf(file, "JUMP :label_%d\n", j+1);
+                            break;
+                        }
+                    }
+                    i++;
                 }
                 else
                 {
                     fprintf(file, "JUMP ERROR\n");
-                    i++;
                 }
                 break;
                 
             case OP_PUSHR:
                 if (i + 1 < commandCount)
                 {
-                    fprintf(file, "PUSHR\n");
+                    Register_t reg = (Register_t)commands[i + 1];
+                    const char* reg_name = GetRegisterName(reg);
+                    fprintf(file, "PUSHR %s\n", reg_name);
                     i++;
                 }
                 else
@@ -47,7 +96,9 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
             case OP_POPR:
                 if (i + 1 < commandCount)
                 {
-                    fprintf(file, "POPR\n");
+                    Register_t reg = (Register_t)commands[i + 1];
+                    const char* reg_name = GetRegisterName(reg);
+                    fprintf(file, "POPR %s\n", reg_name);
                     i++;
                 }
                 else

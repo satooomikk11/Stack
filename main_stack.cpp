@@ -15,9 +15,21 @@ Register_t ParseRegisterName(const char* reg_name)
     return (Register_t)-1;
 }
 
+const char* GetRegisterName(Register_t reg)
+{
+    switch (reg)
+    {
+        case REG_RAX: return "RAX";
+        case REG_RBX: return "RBX";
+        case REG_RCX: return "RCX";
+        case REG_RDX: return "RDX";
+        default: return "UNKNOWN";
+    }
+}
+
 int main()
 {
-    const char* inputFile = "commands.txt";
+    const char* inputFile  = "commands.txt";
     const char* outputFile = "output_commands.txt";
     
     // АССЕМБЛЕР
@@ -52,6 +64,6 @@ int main()
     
     // очистка памяти
     free(commands);
-    
+
     return 0;
 }

@@ -233,7 +233,7 @@ void execute_commands(int* commands, int commandCount)
 {
     // создаём стек
     Stack_t stk = {};
-    StackErr_t err = StackInit(&stk, 5); // задаётся capacity 
+    StackErr_t err = StackInit(&stk, 15); // задаётся capacity 
     if (err != STACK_OK) {
         printf("Ошибка инициализации стека: %d\n", err);
         return;

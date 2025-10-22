@@ -1,12 +1,11 @@
-PUSH 10
-POPR RAX
-PUSH 20
-JUMP 2
-SUB
-MUL
+PUSH 5
+PUSH 3
+JUMP :multiply
+
+:result
 PRINT
-PUSH 50
-PUSHR RAX
+EXIT
+
+:multiply
 MUL
-ADD
-PRINT
+JUMP :result

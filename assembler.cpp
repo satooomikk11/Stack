@@ -17,11 +17,53 @@ int* read_commands_from_file(const char* filename, int* commandCount)
     int  count = 0;
     char line[MAX_LINE_LENGTH];
     
-    // заполняем массив данными
+    // первый проход: сбор меток
+    LabelTable labelTable;
+    labelTable.count = 0;
+    
+    int lineNumber = 0;
+    while (fgets(line, sizeof(line), file))
+    {
+        line[strcspn(line, "\n")] = 0;
+        
+        // проверяем, является ли строка меткой (начинается с :)
+        if (line[0] == ':')
+        {
+            // сохраняем метку и её позицию в массиве команд
+            strncpy(labelTable.labels[labelTable.count].name, line, MAX_LINE_LENGTH - 1);
+            labelTable.labels[labelTable.count].position = count;
+            labelTable.count++;
+        }
+        else if (strlen(line) > 0 && !(line[0] == '/' && line[1] == '/'))
+        {
+            // подсчитываем только команды (не метки и не комментарии)
+            if (strncmp(line, "PUSHR ", 6) == 0 || 
+                strncmp(line, "POPR " , 5) == 0 ||
+                strncmp(line, "JUMP " , 5) == 0 ||
+                strncmp(line, "PUSH " , 5) == 0)
+            {
+                count += 2; // команда + аргумент
+            }
+            else
+            {
+                count++; // команда без аргумента
+            }
+        }
+        lineNumber++;
+    }
+    
+    // второй проход: преобразование команд
+    rewind(file);
+    count = 0;
+    
     while (fgets(line, sizeof(line), file))
     {
         // удаляем символ новой строки
         line[strcspn(line, "\n")] = 0;
+
+        // пропускаем метки
+        if (line[0] == ':' || strlen(line) == 0)
+            continue;
 
         // преобразуем команды в числа
         if (strncmp(line, "PUSHR ", 6) == 0)
@@ -55,14 +97,27 @@ int* read_commands_from_file(const char* filename, int* commandCount)
         else if (strncmp(line, "JUMP ", 5) == 0)
         {
             tempCommands[count++] = OP_JUMP;
-            int offset = 0;
-            if (sscanf(line + 5, "%d", &offset) == 1)
+            const char* label_name = line + 5;
+            
+            // ищем метку в таблице
+            int label_pos = -1;
+            for (int i = 0; i < labelTable.count; i++)
             {
-                tempCommands[count++] = offset;
+                if (strcmp(labelTable.labels[i].name, label_name) == 0)
+                {
+                    label_pos = labelTable.labels[i].position;
+                    break;
+                }
+            }
+            
+            if (label_pos != -1)
+            {
+                tempCommands[count++] = label_pos;
             }
             else
             {
-                printf("Ошибка: неверный формат смещения в JUMP\n");
+                printf("Ошибка: метка %s не найдена\n", label_name);
+                tempCommands[count++] = -1;
             }
         }
         else if (strcmp(line, "EXIT") == 0) { tempCommands[count++] = OP_EXIT; }
@@ -79,15 +134,15 @@ int* read_commands_from_file(const char* filename, int* commandCount)
                 printf("Ошибка: неверный формат числа в PUSH\n");
             }
         }
-        else if (strcmp(line, "POP") == 0)   { tempCommands[count++] = OP_POP;   }
-        else if (strcmp(line, "ADD") == 0)   { tempCommands[count++] = OP_ADD;   }
-        else if (strcmp(line, "SUB") == 0)   { tempCommands[count++] = OP_SUB;   }
-        else if (strcmp(line, "MUL") == 0)   { tempCommands[count++] = OP_MUL;   }
-        else if (strcmp(line, "DIV") == 0)   { tempCommands[count++] = OP_DIV;   }
+        else if (strcmp(line, "POP"  ) == 0) { tempCommands[count++] = OP_POP;   }
+        else if (strcmp(line, "ADD"  ) == 0) { tempCommands[count++] = OP_ADD;   }
+        else if (strcmp(line, "SUB"  ) == 0) { tempCommands[count++] = OP_SUB;   }
+        else if (strcmp(line, "MUL"  ) == 0) { tempCommands[count++] = OP_MUL;   }
+        else if (strcmp(line, "DIV"  ) == 0) { tempCommands[count++] = OP_DIV;   }
         else if (strcmp(line, "PRINT") == 0) { tempCommands[count++] = OP_PRINT; }
         else
         {
-            printf("ОШИБКА: %s\n", line);
+            printf("ОШИБКА: неизвестная команда %s\n", line);
         }
     }
     

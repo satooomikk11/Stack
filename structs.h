@@ -25,12 +25,28 @@ enum OperationCode
     OP_JUMP  = 10
 };
 
+// структура для хранения метки
+struct Label
+{
+    char name[MAX_LINE_LENGTH];
+    int position;
+};
+
+// таблица меток
+struct LabelTable
+{
+    Label labels[10];
+    int count;
+};
+
 // структура, которая передается процессору
 struct Processor
 {
     Stack_t stack;
-    int registers[4];  // RAX, RBX, RCX, RDX
-    int ip;            // instruction pointer
+    int registers[4];   // RAX, RBX, RCX, RDX
+    int ip;             // instruction pointer
+    int callStack[100]; // стек вызовов для возврата из JUMP
+    int callStackSize;
 };
 
 // работа с регистрами
