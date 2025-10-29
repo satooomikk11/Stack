@@ -12,6 +12,7 @@ Register_t ParseRegisterName(const char* reg_name)
     if (strcmp(reg_name, "RBX") == 0) return REG_RBX;
     if (strcmp(reg_name, "RCX") == 0) return REG_RCX;
     if (strcmp(reg_name, "RDX") == 0) return REG_RDX;
+    if (strcmp(reg_name, "REX") == 0) return REG_REX;
     return (Register_t)-1;
 }
 
@@ -23,6 +24,7 @@ const char* GetRegisterName(Register_t reg)
         case REG_RBX: return "RBX";
         case REG_RCX: return "RCX";
         case REG_RDX: return "RDX";
+        case REG_REX: return "REX";
         default: return "UNKNOWN";
     }
 }

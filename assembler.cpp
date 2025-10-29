@@ -118,8 +118,10 @@ int* read_commands_from_file(const char* filename, int* commandCount)
                 tempCommands[count++] = -1;
             }
         }
-        else if (strcmp(line, "RET")  == 0) { tempCommands[count++] = OP_RET;  }
-        else if (strcmp(line, "EXIT") == 0) { tempCommands[count++] = OP_EXIT; }
+        else if (strcmp(line, "RET")   == 0) { tempCommands[count++] = OP_RET;    }
+        else if (strcmp(line, "EXIT")  == 0) { tempCommands[count++] = OP_EXIT;   }
+        else if (strcmp(line, "PUSHH") == 0) { tempCommands[count++] = OP_PUSHH;  }
+        else if (strcmp(line, "POPH")  == 0) { tempCommands[count++] = OP_POPH;   }
         else if (strncmp(line, "PUSH ", 5) == 0)
         {
             tempCommands[count++] = OP_PUSH;

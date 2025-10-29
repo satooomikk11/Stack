@@ -111,6 +111,14 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
                 }
                 break;
 
+            case OP_PUSHH:
+                fprintf(file, "PUSHH\n");
+                break;
+                
+            case OP_POPH:
+                fprintf(file, "POPH\n");
+                break;
+
             case OP_EXIT:
                 fprintf(file, "EXIT\n");
                 break;

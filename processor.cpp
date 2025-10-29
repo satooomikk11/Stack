@@ -1,6 +1,7 @@
 #include <math.h>
 
 #include "structs.h"
+#include "ram.h"
 #include "processor.h"
 
 // сложение верхних элементов стека
@@ -117,12 +118,62 @@ StackErr_t StackPrint(Stack_t *stk)
     return STACK_OK;
 }
 
+// загрузка из RAM в стек
+StackErr_t StackPushH(Stack_t *stk, RAM* ram)
+{
+    if (!stk || !ram) return STACK_ERR_NULL_PTR;
+    
+    StackErr_t err;
+    int address = StackPop(stk, &err);
+    if (err != STACK_OK) return err;
+    
+    int value = 0;
+    err = RAM_read(ram, address, &value);
+    if (err != STACK_OK) return err;
+    
+    return StackPush(stk, value);
+}
+
+// сохранение из стека в RAM
+StackErr_t StackPopH(Stack_t *stk, RAM* ram)
+{
+    if (!stk || !ram) return STACK_ERR_NULL_PTR;
+    
+    StackErr_t err;
+    int value = StackPop(stk, &err);
+    if (err != STACK_OK) return err;
+    
+    int address = StackPop(stk, &err);
+    if (err != STACK_OK)
+    {
+        StackPush(stk, value);
+        return err;
+    }
+    
+    return RAM_write(ram, address, value);
+}
+
 // функция выполнения (вместо копипаста)
 StackErr_t execute_instruction(StackErr_t (*operation)(Stack_t*), Stack_t *stk, StackErr_t *err, const char* op_name)
 {
     if (err != NULL) { *err = STACK_OK; }
     
     StackErr_t result = operation(stk);
+    
+    if (err != NULL) { *err = result; }
+    
+    if (result == STACK_OK) { printf("Команда %s выполнена успешно\n", op_name); }
+    else { printf("Ошибка выполнения %s: %d\n", op_name, result); }
+    
+    return result;
+}
+
+// функция выполнения для операций с RAM
+StackErr_t execute_instruction_ram(StackErr_t (*operation)(Stack_t*, RAM*), Stack_t *stk, RAM* ram, StackErr_t *err, const char* op_name)
+{
+    if (err != NULL) { *err = STACK_OK; }
+    
+    StackErr_t result = operation(stk, ram);
     
     if (err != NULL) { *err = result; }
     
@@ -139,6 +190,10 @@ StackErr_t processor_init(Processor* proc, unsigned stack_capacity)
     
     // инициализация стека
     StackErr_t err = StackInit(&proc->stack, stack_capacity);
+    if (err != STACK_OK) { return err; }
+    
+    // инициализация RAM
+    err = RAM_init(&proc->ram);
     if (err != STACK_OK) { return err; }
     
     // инициализация регистров
@@ -263,7 +318,7 @@ StackErr_t execute_commands(int* commands, int commandCount)
                 }
                 break;
 
-            case OP_CALL:  // заменили JUMP на CALL
+            case OP_CALL:
                 if (proc.ip + 1 < commandCount)
                 {
                     int target_position = commands[proc.ip + 1];
@@ -288,6 +343,14 @@ StackErr_t execute_commands(int* commands, int commandCount)
                     printf("RET ERROR: %d\n", err);
                 }
                 // если RET успешен, proc.ip уже установлен в адрес возврата
+                break;
+
+            case OP_PUSHH:
+                execute_instruction_ram(StackPushH, &proc.stack, &proc.ram, &err, "PUSHH");
+                break;
+
+            case OP_POPH:
+                execute_instruction_ram(StackPopH, &proc.stack, &proc.ram, &err, "POPH");
                 break;
 
             case OP_EXIT:

@@ -2,6 +2,7 @@
 #define STRUCTS_H
 
 #include "stack.h"
+#include "ram.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +25,9 @@ enum OperationCode
     OP_PUSHR = 9,
     OP_POPR  = 10,
     OP_CALL  = 11,
-    OP_RET   = 12
+    OP_RET   = 12,
+    OP_PUSHH = 13,
+    OP_POPH  = 14
 };
 
 // структура для хранения метки
@@ -45,9 +48,10 @@ struct LabelTable
 struct Processor
 {
     Stack_t stack;
-    int registers[4];   // RAX, RBX, RCX, RDX
-    int ip;             // instruction pointer
-    int callStack[100]; // стек вызовов для возврата из CALL
+    RAM ram;                // оперативная память
+    int registers[5];       // RAX, RBX, RCX, RDX, REX
+    int ip;                 // instruction pointer
+    int callStack[100];     // стек вызовов для возврата из CALL
     int callStackSize;
 };
 
