@@ -12,9 +12,10 @@ enum OperationCode
     OP_SUB   = 4,
     OP_MUL   = 5,
     OP_DIV   = 6,
-    OP_PRINT = 7,
-    OP_PUSHR = 8,
-    OP_POPR  = 9
+    OP_SQRT  = 7,
+    OP_PRINT = 8,
+    OP_PUSHR = 9,
+    OP_POPR  = 10
 };
 
 // сложение верхних элементов стека
@@ -194,6 +195,7 @@ int* read_commands_from_file(const char* filename, int* commandCount)
         else if (strcmp(line, "SUB") == 0)   { tempCommands[count++] = OP_SUB;   }
         else if (strcmp(line, "MUL") == 0)   { tempCommands[count++] = OP_MUL;   }
         else if (strcmp(line, "DIV") == 0)   { tempCommands[count++] = OP_DIV;   }
+        else if (strcmp(line, "SQRT") == 0)  { tempCommands[count++] = OP_SQRT;  }
         else if (strcmp(line, "PRINT") == 0) { tempCommands[count++] = OP_PRINT; }
         else
         {
@@ -332,6 +334,10 @@ void execute_commands(int* commands, int commandCount)
             case OP_DIV:
                 execute_instruction(StackDiv, &stk, &err, "DIV");
                 break;
+
+            case OP_SQRT:
+                execute_instruction(StackDiv, &stk, &err, "DIV");
+                break;
                 
             case OP_PRINT:
                execute_instruction(StackPrint, &stk, &err, "PRINT");
@@ -434,6 +440,11 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
                 break;
                 
             case OP_DIV:
+                fprintf(file, "DIV\n");
+                i++;
+                break;
+
+            case OP_SQRT:
                 fprintf(file, "DIV\n");
                 i++;
                 break;

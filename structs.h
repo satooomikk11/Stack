@@ -19,10 +19,12 @@ enum OperationCode
     OP_SUB   = 4,
     OP_MUL   = 5,
     OP_DIV   = 6,
-    OP_PRINT = 7,
-    OP_PUSHR = 8,
-    OP_POPR  = 9,
-    OP_JUMP  = 10
+    OP_SQRT  = 7,
+    OP_PRINT = 8,
+    OP_PUSHR = 9,
+    OP_POPR  = 10,
+    OP_CALL  = 11,
+    OP_RET   = 12
 };
 
 // структура для хранения метки
@@ -45,7 +47,7 @@ struct Processor
     Stack_t stack;
     int registers[4];   // RAX, RBX, RCX, RDX
     int ip;             // instruction pointer
-    int callStack[100]; // стек вызовов для возврата из JUMP
+    int callStack[100]; // стек вызовов для возврата из CALL
     int callStackSize;
 };
 

@@ -15,10 +15,10 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
     int labelCount = 0;
     int labelPositions[100];
     
-    // сначала находим все позиции, на которые ссылаются JUMP команды
+    // сначала находим все позиции, на которые ссылаются CALL команды
     for (int i = 0; i < commandCount; i++)
     {
-        if (commands[i] == OP_JUMP && i + 1 < commandCount)
+        if (commands[i] == OP_CALL && i + 1 < commandCount)
         {
             int target = commands[i + 1];
             if (target >= 0 && target < commandCount)
@@ -49,7 +49,7 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
         {
             if (labelPositions[j] == i)
             {
-                fprintf(file, ":label_%d\n", j);
+                fprintf(file, ":label_%d\n", j+1);
                 break;
             }
         }
@@ -58,7 +58,7 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
         
         switch (opcode)
         { 
-            case OP_JUMP:
+            case OP_CALL:
                 if (i + 1 < commandCount)
                 {
                     int target = commands[i + 1];
@@ -67,7 +67,7 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
                     {
                         if (labelPositions[j] == target)
                         {
-                            fprintf(file, "JUMP :label_%d\n", j+1);
+                            fprintf(file, "CALL :label_%d\n", j+1);
                             break;
                         }
                     }
@@ -75,8 +75,12 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
                 }
                 else
                 {
-                    fprintf(file, "JUMP ERROR\n");
+                    fprintf(file, "CALL ERROR\n");
                 }
+                break;
+                
+            case OP_RET:
+                fprintf(file, "RET\n");
                 break;
                 
             case OP_PUSHR:
@@ -142,6 +146,10 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
                 
             case OP_DIV:
                 fprintf(file, "DIV\n");
+                break;
+
+            case OP_SQRT:
+                fprintf(file, "SQRT\n");
                 break;
                 
             case OP_PRINT:

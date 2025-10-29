@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "structs.h"
 #include "processor.h"
 
@@ -84,6 +86,19 @@ StackErr_t StackDiv(Stack_t *stk)
     return StackPush(stk, result);
 }
 
+// корень из верхнего элемента стека
+StackErr_t StackSqrt(Stack_t *stk)
+{
+    if (!stk) return STACK_ERR_NULL_PTR;
+    
+    StackErr_t err;
+    int a = StackPop(stk, &err);
+    if (err != STACK_OK) return err;
+
+    int result = sqrt(a);
+    return StackPush(stk, result);
+}
+
 // вывод верхнего элемента стека
 StackErr_t StackPrint(Stack_t *stk)
 {
@@ -141,7 +156,7 @@ StackErr_t processor_init(Processor* proc, unsigned stack_capacity)
     return STACK_OK;
 }
 
-StackErr_t StackJump(int* commands, int commandCount, Processor* proc, int target_position)
+StackErr_t StackCall(int* commands, int commandCount, Processor* proc, int target_position)
 {
     if (!commands || !proc)
     {
@@ -151,14 +166,15 @@ StackErr_t StackJump(int* commands, int commandCount, Processor* proc, int targe
     // проверяем адрес метки
     if (target_position < 0 || target_position >= commandCount)
     {
-        printf("Ошибка JUMP: неверный адрес метки %d\n", target_position);
+        printf("Ошибка CALL: неверный адрес метки %d\n", target_position);
         return STACK_ERR_DAMAGED;
     }
     
-    // сохраняем текущую позицию для возврата
+    // сохраняем адрес возврата (позицию после CALL команды)
     if (proc->callStackSize < 100)
     {
-        proc->callStack[proc->callStackSize++] = proc->ip + 2; // сохраняем позицию после JUMP
+        proc->callStack[proc->callStackSize++] = proc->ip + 2;
+        printf("CALL: сохранен адрес возврата %d\n", proc->ip + 2);
     }
     else
     {
@@ -166,8 +182,30 @@ StackErr_t StackJump(int* commands, int commandCount, Processor* proc, int targe
         return STACK_ERR_OVERFLOW;
     }
     
-    // переходим к метке
+    // переходим к ассемблерной функции
+    printf("CALL: переход к адресу %d\n", target_position);
     proc->ip = target_position;
+    
+    return STACK_OK;
+}
+
+StackErr_t StackRet(Processor* proc)
+{
+    if (!proc)
+    {
+        return STACK_ERR_NULL_PTR;
+    }
+    
+    if (proc->callStackSize == 0)
+    {
+        printf("Ошибка RET: стек вызовов пуст\n");
+        return STACK_ERR_EMPTY;
+    }
+    
+    // восстанавливаем адрес возврата из стека вызовов
+    int return_address = proc->callStack[--proc->callStackSize];
+    printf("RET: возврат к адресу %d\n", return_address - 1);
+    proc->ip = return_address - 1;
     
     return STACK_OK;
 }
@@ -200,12 +238,11 @@ StackErr_t execute_commands(int* commands, int commandCount)
                     {
                         printf("PUSHR ERROR: %d\n", err);
                     }
-                    proc.ip += 2;
+                    proc.ip++;
                 }
                 else
                 {
                     printf("ERROR: нет регистра после PUSHR\n");
-                    proc.ip++;
                 }
                 break;
                 
@@ -218,32 +255,39 @@ StackErr_t execute_commands(int* commands, int commandCount)
                     {
                         printf("POPR ERROR: %d\n", err);
                     }
-                    proc.ip += 2;
+                    proc.ip++;
                 }
                 else
                 {
                     printf("ERROR: нет регистра после POPR\n");
-                    proc.ip++;
                 }
                 break;
 
-            case OP_JUMP:
+            case OP_CALL:  // заменили JUMP на CALL
                 if (proc.ip + 1 < commandCount)
                 {
                     int target_position = commands[proc.ip + 1];
-                    err = StackJump(commands, commandCount, &proc, target_position);
+                    err = StackCall(commands, commandCount, &proc, target_position);
                     if (err != STACK_OK)
                     {
-                        printf("JUMP ERROR: %d\n", err);
-                        proc.ip += 2;
+                        printf("CALL ERROR: %d\n", err);
+                        proc.ip++;
                     }
-                    // если JUMP успешен, proc.ip уже установлен в target_position
+                    // если CALL успешен, proc.ip уже установлен в target_position
                 }
                 else
                 {
-                    printf("ERROR: нет целевой позиции после JUMP\n");
-                    proc.ip++;
+                    printf("ERROR: нет целевой позиции после CALL\n");
                 }
+                break;
+
+            case OP_RET:
+                err = StackRet(&proc);
+                if (err != STACK_OK)
+                {
+                    printf("RET ERROR: %d\n", err);
+                }
+                // если RET успешен, proc.ip уже установлен в адрес возврата
                 break;
 
             case OP_EXIT:
@@ -264,12 +308,11 @@ StackErr_t execute_commands(int* commands, int commandCount)
                     {
                         printf("Ошибка добавления: %d\n", err);
                     }
-                    proc.ip += 2;
+                    proc.ip++;
                 }
                 else
                 {
                     printf("ERROR: нет числа после PUSH\n");
-                    proc.ip++;
                 }
                 break;
                 
@@ -279,47 +322,39 @@ StackErr_t execute_commands(int* commands, int commandCount)
                     int popped = StackPop(&proc.stack, &pop_err);
                     if (pop_err == STACK_OK) { printf("Извлечено: %d\n", popped); }
                     else { printf("Ошибка извлечения: %d\n", pop_err); }
-                    proc.ip++;
                 }
                 break;
                 
             case OP_ADD:
                 execute_instruction(StackAdd, &proc.stack, &err, "ADD");
-                proc.ip++;
                 break;
             
             case OP_SUB:
                 execute_instruction(StackSub, &proc.stack, &err, "SUB");
-                proc.ip++;
                 break;
                 
             case OP_MUL:
                 execute_instruction(StackMul, &proc.stack, &err, "MUL");
-                proc.ip++;
                 break;
                 
             case OP_DIV:
                 execute_instruction(StackDiv, &proc.stack, &err, "DIV");
-                proc.ip++;
+                break;
+            
+            case OP_SQRT:
+                execute_instruction(StackSqrt, &proc.stack, &err, "SQRT");
                 break;
                 
             case OP_PRINT:
                 execute_instruction(StackPrint, &proc.stack, &err, "PRINT");
-                proc.ip++;
                 break;
                    
             default:
                 printf("Неизвестный код операции: %d\n", opcode);
-                proc.ip++;
                 break;
         }
-        
-        // проверяем, нужно ли вернуться из подпрограммы (если достигли конца или встретили RETURN)
-        if (proc.ip >= commandCount && proc.callStackSize > 0)
-        {
-            proc.ip = proc.callStack[--proc.callStackSize];
-            printf("Возврат к позиции %d\n", proc.ip);
-        }
+
+        proc.ip++;
     }
     
     StackDestroy(&proc.stack);

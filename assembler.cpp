@@ -14,45 +14,43 @@ int* read_commands_from_file(const char* filename, int* commandCount)
     
     // временный массив для хранения команд
     int* tempCommands = (int*)calloc(1000, sizeof(int));
-    int  count = 0;
+    int count = 0;
     char line[MAX_LINE_LENGTH];
     
-    // первый проход: сбор меток
+    // ПЕРВЫЙ ПРОХОД: сбор меток и подсчёт КОМАНД (без меток)
     LabelTable labelTable;
     labelTable.count = 0;
-    
-    int lineNumber = 0;
+    int current_position = 0;
+
     while (fgets(line, sizeof(line), file))
     {
         line[strcspn(line, "\n")] = 0;
         
-        // проверяем, является ли строка меткой (начинается с :)
         if (line[0] == ':')
         {
-            // сохраняем метку и её позицию в массиве команд
+            // Метка указывает на текущую позицию команды
             strncpy(labelTable.labels[labelTable.count].name, line, MAX_LINE_LENGTH - 1);
-            labelTable.labels[labelTable.count].position = count;
+            labelTable.labels[labelTable.count].position = current_position;
             labelTable.count++;
         }
         else if (strlen(line) > 0 && !(line[0] == '/' && line[1] == '/'))
         {
-            // подсчитываем только команды (не метки и не комментарии)
+            // Увеличиваем счётчик позиций команд
             if (strncmp(line, "PUSHR ", 6) == 0 || 
                 strncmp(line, "POPR " , 5) == 0 ||
-                strncmp(line, "JUMP " , 5) == 0 ||
+                strncmp(line, "CALL " , 5) == 0 ||
                 strncmp(line, "PUSH " , 5) == 0)
             {
-                count += 2; // команда + аргумент
+                current_position += 2; // команда + аргумент
             }
             else
             {
-                count++; // команда без аргумента
+                current_position += 1; // команда без аргумента
             }
         }
-        lineNumber++;
     }
-    
-    // второй проход: преобразование команд
+
+    // ВТОРОЙ ПРОХОД: преобразование команд
     rewind(file);
     count = 0;
     
@@ -61,7 +59,7 @@ int* read_commands_from_file(const char* filename, int* commandCount)
         // удаляем символ новой строки
         line[strcspn(line, "\n")] = 0;
 
-        // пропускаем метки
+        // пропускаем метки и пустые строки
         if (line[0] == ':' || strlen(line) == 0)
             continue;
 
@@ -77,7 +75,7 @@ int* read_commands_from_file(const char* filename, int* commandCount)
             }
             else
             {
-                printf("ERROR: неверный регистр %s\n", reg_name);
+                printf("ASS ERROR: неверный регистр %s\n", reg_name);
             }
         }
         else if (strncmp(line, "POPR ", 5) == 0)
@@ -91,12 +89,12 @@ int* read_commands_from_file(const char* filename, int* commandCount)
             }
             else
             {
-                printf("ERROR: неверный регистр %s\n", reg_name);
+                printf("ASS ERROR: неверный регистр %s\n", reg_name);
             }
         }
-        else if (strncmp(line, "JUMP ", 5) == 0)
+        else if (strncmp(line, "CALL ", 5) == 0)
         {
-            tempCommands[count++] = OP_JUMP;
+            tempCommands[count++] = OP_CALL;
             const char* label_name = line + 5;
             
             // ищем метку в таблице
@@ -105,7 +103,7 @@ int* read_commands_from_file(const char* filename, int* commandCount)
             {
                 if (strcmp(labelTable.labels[i].name, label_name) == 0)
                 {
-                    label_pos = labelTable.labels[i].position;
+                    label_pos = labelTable.labels[i].position - 1;
                     break;
                 }
             }
@@ -120,6 +118,7 @@ int* read_commands_from_file(const char* filename, int* commandCount)
                 tempCommands[count++] = -1;
             }
         }
+        else if (strcmp(line, "RET")  == 0) { tempCommands[count++] = OP_RET;  }
         else if (strcmp(line, "EXIT") == 0) { tempCommands[count++] = OP_EXIT; }
         else if (strncmp(line, "PUSH ", 5) == 0)
         {
@@ -134,11 +133,12 @@ int* read_commands_from_file(const char* filename, int* commandCount)
                 printf("Ошибка: неверный формат числа в PUSH\n");
             }
         }
-        else if (strcmp(line, "POP"  ) == 0) { tempCommands[count++] = OP_POP;   }
-        else if (strcmp(line, "ADD"  ) == 0) { tempCommands[count++] = OP_ADD;   }
-        else if (strcmp(line, "SUB"  ) == 0) { tempCommands[count++] = OP_SUB;   }
-        else if (strcmp(line, "MUL"  ) == 0) { tempCommands[count++] = OP_MUL;   }
-        else if (strcmp(line, "DIV"  ) == 0) { tempCommands[count++] = OP_DIV;   }
+        else if (strcmp(line, "POP")   == 0) { tempCommands[count++] = OP_POP;   }
+        else if (strcmp(line, "ADD")   == 0) { tempCommands[count++] = OP_ADD;   }
+        else if (strcmp(line, "SUB")   == 0) { tempCommands[count++] = OP_SUB;   }
+        else if (strcmp(line, "MUL")   == 0) { tempCommands[count++] = OP_MUL;   }
+        else if (strcmp(line, "DIV")   == 0) { tempCommands[count++] = OP_DIV;   }
+        else if (strcmp(line, "SQRT")  == 0) { tempCommands[count++] = OP_SQRT;  }
         else if (strcmp(line, "PRINT") == 0) { tempCommands[count++] = OP_PRINT; }
         else
         {
@@ -153,6 +153,6 @@ int* read_commands_from_file(const char* filename, int* commandCount)
     memcpy(commands, tempCommands, count * sizeof(int));
     free(tempCommands);
     
-    *commandCount = count;
+    *commandCount = count;    
     return commands;
 }
