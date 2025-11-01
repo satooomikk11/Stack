@@ -1,6 +1,31 @@
 #include "structs.h"
 #include "assembler.h"
 
+Register_t ParseRegisterName(const char* reg_name)
+{
+    assert(reg_name);
+
+    if (strcmp(reg_name, "RAX") == 0) return REG_RAX;
+    if (strcmp(reg_name, "RBX") == 0) return REG_RBX;
+    if (strcmp(reg_name, "RCX") == 0) return REG_RCX;
+    if (strcmp(reg_name, "RDX") == 0) return REG_RDX;
+    if (strcmp(reg_name, "REX") == 0) return REG_REX;
+    return (Register_t)-1;
+}
+
+const char* GetRegisterName(Register_t reg)
+{
+    switch (reg)
+    {
+        case REG_RAX: return "RAX";
+        case REG_RBX: return "RBX";
+        case REG_RCX: return "RCX";
+        case REG_RDX: return "RDX";
+        case REG_REX: return "REX";
+        default: return "UNKNOWN";
+    }
+}
+
 // чтение из файла и преобразование в массив (ассемблер)
 int* read_commands_from_file(const char* filename, int* commandCount)
 {
@@ -12,30 +37,35 @@ int* read_commands_from_file(const char* filename, int* commandCount)
         return NULL;
     }
     
-    // временный массив для хранения команд
-    int* tempCommands = (int*)calloc(1000, sizeof(int));
+    // динамический массив для хранения команд
+    int* commands = (int*)calloc(INITIAL_COMMAND_CAPACITY, sizeof(int));
+    if (!commands)
+    {
+        fclose(file);
+        return NULL;
+    }
+    
+    int capacity = INITIAL_COMMAND_CAPACITY;
     int count = 0;
     char line[MAX_LINE_LENGTH];
     
     // ПЕРВЫЙ ПРОХОД: сбор меток и подсчёт КОМАНД (без меток)
     LabelTable labelTable;
-    labelTable.count = 0;
+    LabelTable_init(&labelTable);
     int current_position = 0;
 
-    while (fgets(line, sizeof(line), file))
+    while (fgets(line, MAX_LINE_LENGTH, file))
     {
         line[strcspn(line, "\n")] = 0;
         
         if (line[0] == ':')
         {
-            // Метка указывает на текущую позицию команды
-            strncpy(labelTable.labels[labelTable.count].name, line, MAX_LINE_LENGTH - 1);
-            labelTable.labels[labelTable.count].position = current_position;
-            labelTable.count++;
+            // метка указывает на текущую позицию команды
+            LabelTable_add(&labelTable, line, current_position);
         }
         else if (strlen(line) > 0 && !(line[0] == '/' && line[1] == '/'))
         {
-            // Увеличиваем счётчик позиций команд
+            // увеличиваем счётчик позиций команд
             if (strncmp(line, "PUSHR ", 6) == 0 || 
                 strncmp(line, "POPR " , 5) == 0 ||
                 strncmp(line, "CALL " , 5) == 0 ||
@@ -63,6 +93,23 @@ int* read_commands_from_file(const char* filename, int* commandCount)
         if (line[0] == ':' || strlen(line) == 0)
             continue;
 
+        // проверяем, нужно ли расширить массив команд
+        if (count + 2 >= capacity)
+        {
+            int new_capacity = capacity * 2;
+            int* new_commands = (int*)realloc(commands, new_capacity * sizeof(int));
+            if (!new_commands)
+            {
+                printf("Ошибка: не удалось расширить массив команд\n");
+                free(commands);
+                LabelTable_destroy(&labelTable);
+                fclose(file);
+                return NULL;
+            }
+            commands = new_commands;
+            capacity = new_capacity;
+        }
+
         // преобразуем команды в числа
         if (strncmp(line, "PUSHR ", 6) == 0)
         {
@@ -70,8 +117,8 @@ int* read_commands_from_file(const char* filename, int* commandCount)
             Register_t reg = ParseRegisterName(reg_name);
             if (reg != (Register_t)-1)
             {
-                tempCommands[count++] = OP_PUSHR;
-                tempCommands[count++] = (int)reg;
+                commands[count++] = OP_PUSHR;
+                commands[count++] = (int)reg;
             }
             else
             {
@@ -84,8 +131,8 @@ int* read_commands_from_file(const char* filename, int* commandCount)
             Register_t reg = ParseRegisterName(reg_name);
             if (reg != (Register_t)-1)
             {
-                tempCommands[count++] = OP_POPR;
-                tempCommands[count++] = (int)reg;
+                commands[count++] = OP_POPR;
+                commands[count++] = (int)reg;
             }
             else
             {
@@ -94,7 +141,7 @@ int* read_commands_from_file(const char* filename, int* commandCount)
         }
         else if (strncmp(line, "CALL ", 5) == 0)
         {
-            tempCommands[count++] = OP_CALL;
+            commands[count++] = OP_CALL;
             const char* label_name = line + 5;
             
             // ищем метку в таблице
@@ -103,45 +150,45 @@ int* read_commands_from_file(const char* filename, int* commandCount)
             {
                 if (strcmp(labelTable.labels[i].name, label_name) == 0)
                 {
-                    label_pos = labelTable.labels[i].position - 1;
+                    label_pos = labelTable.labels[i].position;
                     break;
                 }
             }
             
             if (label_pos != -1)
             {
-                tempCommands[count++] = label_pos;
+                commands[count++] = label_pos;
             }
             else
             {
                 printf("Ошибка: метка %s не найдена\n", label_name);
-                tempCommands[count++] = -1;
+                commands[count++] = -1;
             }
         }
-        else if (strcmp(line, "RET")   == 0) { tempCommands[count++] = OP_RET;    }
-        else if (strcmp(line, "EXIT")  == 0) { tempCommands[count++] = OP_EXIT;   }
-        else if (strcmp(line, "PUSHH") == 0) { tempCommands[count++] = OP_PUSHH;  }
-        else if (strcmp(line, "POPH")  == 0) { tempCommands[count++] = OP_POPH;   }
+        else if (strcmp(line, "RET")   == 0) { commands[count++] = OP_RET;    }
+        else if (strcmp(line, "EXIT")  == 0) { commands[count++] = OP_EXIT;   }
+        else if (strcmp(line, "PUSHH") == 0) { commands[count++] = OP_PUSHH;  }
+        else if (strcmp(line, "POPH")  == 0) { commands[count++] = OP_POPH;   }
         else if (strncmp(line, "PUSH ", 5) == 0)
         {
-            tempCommands[count++] = OP_PUSH;
+            commands[count++] = OP_PUSH;
             int value = 0;
             if (sscanf(line + 5, "%d", &value) == 1)
             {
-                tempCommands[count++] = value;
+                commands[count++] = value;
             }
             else
             {
                 printf("Ошибка: неверный формат числа в PUSH\n");
             }
         }
-        else if (strcmp(line, "POP")   == 0) { tempCommands[count++] = OP_POP;   }
-        else if (strcmp(line, "ADD")   == 0) { tempCommands[count++] = OP_ADD;   }
-        else if (strcmp(line, "SUB")   == 0) { tempCommands[count++] = OP_SUB;   }
-        else if (strcmp(line, "MUL")   == 0) { tempCommands[count++] = OP_MUL;   }
-        else if (strcmp(line, "DIV")   == 0) { tempCommands[count++] = OP_DIV;   }
-        else if (strcmp(line, "SQRT")  == 0) { tempCommands[count++] = OP_SQRT;  }
-        else if (strcmp(line, "PRINT") == 0) { tempCommands[count++] = OP_PRINT; }
+        else if (strcmp(line, "POP")   == 0) { commands[count++] = OP_POP;   }
+        else if (strcmp(line, "ADD")   == 0) { commands[count++] = OP_ADD;   }
+        else if (strcmp(line, "SUB")   == 0) { commands[count++] = OP_SUB;   }
+        else if (strcmp(line, "MUL")   == 0) { commands[count++] = OP_MUL;   }
+        else if (strcmp(line, "DIV")   == 0) { commands[count++] = OP_DIV;   }
+        else if (strcmp(line, "SQRT")  == 0) { commands[count++] = OP_SQRT;  }
+        else if (strcmp(line, "PRINT") == 0) { commands[count++] = OP_PRINT; }
         else
         {
             printf("ОШИБКА: неизвестная команда %s\n", line);
@@ -149,11 +196,7 @@ int* read_commands_from_file(const char* filename, int* commandCount)
     }
     
     fclose(file);
-    
-    // создаем финальный массив нужного размера
-    int* commands = (int*)calloc(count, sizeof(int));
-    memcpy(commands, tempCommands, count * sizeof(int));
-    free(tempCommands);
+    LabelTable_destroy(&labelTable);
     
     *commandCount = count;    
     return commands;

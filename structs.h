@@ -9,7 +9,12 @@
 #include <string.h>
 #include <assert.h>
 
-#define MAX_LINE_LENGTH 1000
+const int MAX_LINE_LENGTH          = 1000;
+const int INITIAL_LABEL_CAPACITY   = 10;
+const int INITIAL_COMMAND_CAPACITY = 1000;
+const int MAX_CALL_STACK_SIZE      = 100;
+const int DEFAULT_RAM_SIZE         = 1024;
+const int DEFAULT_STACK_CAPACITY   = 100;
 
 enum OperationCode
 {
@@ -37,12 +42,18 @@ struct Label
     int position;
 };
 
-// таблица меток
+// таблица меток с динамическим массивом
 struct LabelTable
 {
-    Label labels[10];
+    Label* labels;
     int count;
+    int capacity;
 };
+
+// инициализация и очистка таблицы меток
+StackErr_t LabelTable_init(LabelTable* table);
+StackErr_t LabelTable_add(LabelTable* table, const char* name, int position);
+StackErr_t LabelTable_destroy(LabelTable* table);
 
 // структура, которая передается процессору
 struct Processor

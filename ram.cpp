@@ -1,23 +1,27 @@
+#include <stdio.h>
 #include "ram.h"
 #include "structs.h"
-#include <stdio.h>
 
 // инициализация RAM
-StackErr_t RAM_init(RAM* ram)
+StackErr_t RAM_init(RAM* ram, int size)
 {
-    if (!ram) { return STACK_ERR_NULL_PTR; }
-    
-    for (int i = 0; i < RAM_SIZE; i++)
-    {
-        ram->data[i] = 0;
+    if (!ram || size <= 0)
+    { 
+        return STACK_ERR_NULL_PTR; 
     }
     
-    ram->size = RAM_SIZE;
+    ram->data = (int*)calloc(size, sizeof(int));
+    if (!ram->data)
+    {
+        return STACK_ERR_DAMAGED;
+    }
+    
+    ram->size = size;
     return STACK_OK;
 }
 
 // чтение из RAM по адресу
-StackErr_t RAM_read(const RAM* ram, int address, int* value)
+StackErr_t RAM_read(const RAM* ram, unsigned address, int* value)
 {
     if (!ram || !value) { return STACK_ERR_NULL_PTR; }
     
@@ -32,7 +36,7 @@ StackErr_t RAM_read(const RAM* ram, int address, int* value)
 }
 
 // запись в RAM по адресу
-StackErr_t RAM_write(RAM* ram, int address, int value)
+StackErr_t RAM_write(RAM* ram, unsigned address, int value)
 {
     if (!ram) { return STACK_ERR_NULL_PTR; }
     
@@ -56,5 +60,19 @@ StackErr_t RAM_clear(RAM* ram)
         ram->data[i] = 0;
     }
     
+    return STACK_OK;
+}
+
+// освобождение памяти RAM
+StackErr_t RAM_destroy(RAM* ram)
+{
+    if (!ram) { return STACK_ERR_NULL_PTR; }
+    
+    if (ram->data) {
+        free(ram->data);
+        ram->data = NULL;
+    }
+    
+    ram->size = 0;
     return STACK_OK;
 }

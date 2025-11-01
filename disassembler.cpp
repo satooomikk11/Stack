@@ -1,6 +1,20 @@
 #include "structs.h"
 #include "disassembler.h"
 
+// Добавляем реализацию GetRegisterName
+const char* GetRegisterName(Register_t reg)
+{
+    switch (reg)
+    {
+        case REG_RAX: return "RAX";
+        case REG_RBX: return "RBX";
+        case REG_RCX: return "RCX";
+        case REG_RDX: return "RDX";
+        case REG_REX: return "REX";
+        default: return "UNKNOWN";
+    }
+}
+
 // преобразование массива обратно в текст (деассемблер)
 void write_commands_to_file(const char* filename, int* commands, int commandCount)
 {
