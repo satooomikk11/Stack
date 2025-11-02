@@ -67,6 +67,7 @@ StackErr_t StackSub(Stack_t *stk)
 // умножение верхних элементов стека
 StackErr_t StackMul(Stack_t *stk)
 {
+    // StackDump(stk);
     if (!stk) return STACK_ERR_NULL_PTR;
     
     StackErr_t err;
