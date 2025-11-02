@@ -13,6 +13,25 @@ Register_t ParseRegisterName(const char* reg_name)
     return (Register_t)-1;
 }
 
+// макрос для обработки джампов
+#define PROCESS_JMP_COMMAND(op_name, op_code)                              \
+    else if (strncmp(line, op_name " ", strlen(op_name) + 1) == 0)         \
+    {                                                                      \
+        commands[count++] = op_code;                                       \
+        int target = 0;                                                    \
+        if (sscanf(line + strlen(op_name) + 1, "%d", &target) == 1)        \
+        {                                                                  \
+            commands[count++] = target;                                    \
+        }                                                                  \
+        else                                                               \
+        {                                                                  \
+            printf("Ошибка: неверный формат адреса в " op_name "\n");      \
+        }                                                                  \
+    }
+
+// макрос для обработки команд без аргументов
+#define WRITE_COMMAND(op_code) { commands[count++] = op_code; }
+
 // чтение из файла и преобразование в массив (ассемблер)
 int* read_commands_from_file(const char* filename, int* commandCount)
 {
@@ -84,16 +103,14 @@ int* read_commands_from_file(const char* filename, int* commandCount)
         if (count + 2 >= capacity)
         {
             int new_capacity = capacity * 2;
-            int* new_commands = (int*)realloc(commands, new_capacity * sizeof(int));
-            if (!new_commands)
+            commands = (int*)realloc(commands, new_capacity * sizeof(int));
+            if (!commands)
             {
                 printf("Ошибка: не удалось расширить массив команд\n");
-                free(commands);
                 LabelTable_destroy(&labelTable);
                 fclose(file);
                 return NULL;
             }
-            commands = new_commands;
             capacity = new_capacity;
         }
 
@@ -111,84 +128,12 @@ int* read_commands_from_file(const char* filename, int* commandCount)
                 printf("Ошибка: неверный формат адреса в JMP\n");
             }
         }
-        else if (strncmp(line, "JE ", 3) == 0)
-        {
-            commands[count++] = OP_JE;
-            int target = 0;
-            if (sscanf(line + 3, "%d", &target) == 1)
-            {
-                commands[count++] = target;
-            }
-            else
-            {
-                printf("Ошибка: неверный формат адреса в JE\n");
-            }
-        }
-        else if (strncmp(line, "JNE ", 4) == 0)
-        {
-            commands[count++] = OP_JNE;
-            int target = 0;
-            if (sscanf(line + 4, "%d", &target) == 1)
-            {
-                commands[count++] = target;
-            }
-            else
-            {
-                printf("Ошибка: неверный формат адреса в JNE\n");
-            }
-        }
-        else if (strncmp(line, "JG ", 3) == 0)
-        {
-            commands[count++] = OP_JG;
-            int target = 0;
-            if (sscanf(line + 3, "%d", &target) == 1)
-            {
-                commands[count++] = target;
-            }
-            else
-            {
-                printf("Ошибка: неверный формат адреса в JG\n");
-            }
-        }
-        else if (strncmp(line, "JL ", 3) == 0)
-        {
-            commands[count++] = OP_JL;
-            int target = 0;
-            if (sscanf(line + 3, "%d", &target) == 1)
-            {
-                commands[count++] = target;
-            }
-            else
-            {
-                printf("Ошибка: неверный формат адреса в JL\n");
-            }
-        }
-        else if (strncmp(line, "JGE ", 4) == 0)
-        {
-            commands[count++] = OP_JGE;
-            int target = 0;
-            if (sscanf(line + 4, "%d", &target) == 1)
-            {
-                commands[count++] = target;
-            }
-            else
-            {
-                printf("Ошибка: неверный формат адреса в JGE\n");
-            }
-        }
-        else if (strncmp(line, "JLE ", 4) == 0)
-        {
-            commands[count++] = OP_JLE;
-            int target = 0;
-            if (sscanf(line + 4, "%d", &target) == 1)
-            {
-                commands[count++] = target;
-            }
-            else
-            {
-                printf("Ошибка: неверный формат адреса в JLE\n");
-            }
-        }
+        PROCESS_JMP_COMMAND("JE" , OP_JE )
+        PROCESS_JMP_COMMAND("JNE", OP_JNE)
+        PROCESS_JMP_COMMAND("JG" , OP_JG )
+        PROCESS_JMP_COMMAND("JL" , OP_JL )
+        PROCESS_JMP_COMMAND("JGE", OP_JGE)
+        PROCESS_JMP_COMMAND("JLE", OP_JLE)
         else if (strncmp(line, "PUSHR ", 6) == 0)
         {
             const char* reg_name = line + 6;
@@ -243,10 +188,6 @@ int* read_commands_from_file(const char* filename, int* commandCount)
                 commands[count++] = -1;
             }
         }
-        else if (strcmp(line, "RET")   == 0) { commands[count++] = OP_RET;    }
-        else if (strcmp(line, "EXIT")  == 0) { commands[count++] = OP_EXIT;   }
-        else if (strcmp(line, "PUSHH") == 0) { commands[count++] = OP_PUSHH;  }
-        else if (strcmp(line, "POPH")  == 0) { commands[count++] = OP_POPH;   }
         else if (strncmp(line, "PUSH ", 5) == 0)
         {
             commands[count++] = OP_PUSH;
@@ -260,13 +201,17 @@ int* read_commands_from_file(const char* filename, int* commandCount)
                 printf("Ошибка: неверный формат числа в PUSH\n");
             }
         }
-        else if (strcmp(line, "POP")   == 0) { commands[count++] = OP_POP;   }
-        else if (strcmp(line, "ADD")   == 0) { commands[count++] = OP_ADD;   }
-        else if (strcmp(line, "SUB")   == 0) { commands[count++] = OP_SUB;   }
-        else if (strcmp(line, "MUL")   == 0) { commands[count++] = OP_MUL;   }
-        else if (strcmp(line, "DIV")   == 0) { commands[count++] = OP_DIV;   }
-        else if (strcmp(line, "SQRT")  == 0) { commands[count++] = OP_SQRT;  }
-        else if (strcmp(line, "PRINT") == 0) { commands[count++] = OP_PRINT; }
+        else if (strcmp(line, "RET")   == 0) WRITE_COMMAND(OP_RET)
+        else if (strcmp(line, "EXIT")  == 0) WRITE_COMMAND(OP_EXIT)
+        else if (strcmp(line, "PUSHH") == 0) WRITE_COMMAND(OP_PUSHH)
+        else if (strcmp(line, "POPH")  == 0) WRITE_COMMAND(OP_POPH)
+        else if (strcmp(line, "POP")   == 0) WRITE_COMMAND(OP_POP)
+        else if (strcmp(line, "ADD")   == 0) WRITE_COMMAND(OP_ADD)
+        else if (strcmp(line, "SUB")   == 0) WRITE_COMMAND(OP_SUB)
+        else if (strcmp(line, "MUL")   == 0) WRITE_COMMAND(OP_MUL)
+        else if (strcmp(line, "DIV")   == 0) WRITE_COMMAND(OP_DIV)
+        else if (strcmp(line, "SQRT")  == 0) WRITE_COMMAND(OP_SQRT)
+        else if (strcmp(line, "PRINT") == 0) WRITE_COMMAND(OP_PRINT)
         else
         {
             printf("ОШИБКА: неизвестная команда %s\n", line);

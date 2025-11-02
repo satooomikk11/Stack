@@ -42,11 +42,8 @@ StackErr_t LabelTable_destroy(LabelTable* table)
 {
     if (!table) return STACK_ERR_NULL_PTR;
     
-    if (table->labels)
-    {
-        free(table->labels);
-        table->labels = NULL;
-    }
+    free(table->labels);
+    table->labels = NULL;
     
     table->count = 0;
     table->capacity = 0;

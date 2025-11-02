@@ -68,10 +68,8 @@ StackErr_t RAM_destroy(RAM* ram)
 {
     if (!ram) { return STACK_ERR_NULL_PTR; }
     
-    if (ram->data) {
-        free(ram->data);
-        ram->data = NULL;
-    }
+    free(ram->data);
+    ram->data = NULL;
     
     ram->size = 0;
     return STACK_OK;

@@ -1,6 +1,27 @@
 #include "structs.h"
 #include "disassembler.h"
 
+// макрос для обработки джампов
+#define WRITE_JMP_COMMAND(op_name)                          \
+    case op_name:                                           \
+        if (i + 1 < commandCount)                           \
+        {                                                   \
+            int target = commands[i + 1];                   \
+            fprintf(file, #op_name " %d\n", target);        \
+            i++;                                            \
+        }                                                   \
+        else                                                \
+        {                                                   \
+            fprintf(file, #op_name " ERROR\n");             \
+        }                                                   \
+        break;
+
+// макрос для обработки команд без аргументов
+#define WRITE_NO_ARG_COMMAND(op_name)                       \
+    case op_name:                                           \
+        fprintf(file, #op_name "\n");                       \
+        break;
+
 // преобразование массива обратно в текст (деассемблер)
 void write_commands_to_file(const char* filename, int* commands, int commandCount)
 {
@@ -79,100 +100,13 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
                 }
                 break;
                 
-            case OP_RET:
-                fprintf(file, "RET\n");
-                break;
-
-            case OP_JMP:
-                if (i + 1 < commandCount)
-                {
-                    int target = commands[i + 1];
-                    fprintf(file, "JMP %d\n", target);
-                    i++;
-                }
-                else
-                {
-                    fprintf(file, "JMP ERROR\n");
-                }
-                break;
-                
-            case OP_JE:
-                if (i + 1 < commandCount)
-                {
-                    int target = commands[i + 1];
-                    fprintf(file, "JE %d\n", target);
-                    i++;
-                }
-                else
-                {
-                    fprintf(file, "JE ERROR\n");
-                }
-                break;
-                
-            case OP_JNE:
-                if (i + 1 < commandCount)
-                {
-                    int target = commands[i + 1];
-                    fprintf(file, "JNE %d\n", target);
-                    i++;
-                }
-                else
-                {
-                    fprintf(file, "JNE ERROR\n");
-                }
-                break;
-                
-            case OP_JG:
-                if (i + 1 < commandCount)
-                {
-                    int target = commands[i + 1];
-                    fprintf(file, "JG %d\n", target);
-                    i++;
-                }
-                else
-                {
-                    fprintf(file, "JG ERROR\n");
-                }
-                break;
-                
-            case OP_JL:
-                if (i + 1 < commandCount)
-                {
-                    int target = commands[i + 1];
-                    fprintf(file, "JL %d\n", target);
-                    i++;
-                }
-                else
-                {
-                    fprintf(file, "JL ERROR\n");
-                }
-                break;
-                
-            case OP_JGE:
-                if (i + 1 < commandCount)
-                {
-                    int target = commands[i + 1];
-                    fprintf(file, "JGE %d\n", target);
-                    i++;
-                }
-                else
-                {
-                    fprintf(file, "JGE ERROR\n");
-                }
-                break;
-                
-            case OP_JLE:
-                if (i + 1 < commandCount)
-                {
-                    int target = commands[i + 1];
-                    fprintf(file, "JLE %d\n", target);
-                    i++;
-                }
-                else
-                {
-                    fprintf(file, "JLE ERROR\n");
-                }
-                break;
+            WRITE_JMP_COMMAND(OP_JMP)
+            WRITE_JMP_COMMAND(OP_JE )
+            WRITE_JMP_COMMAND(OP_JNE)
+            WRITE_JMP_COMMAND(OP_JG )
+            WRITE_JMP_COMMAND(OP_JL )
+            WRITE_JMP_COMMAND(OP_JGE)
+            WRITE_JMP_COMMAND(OP_JLE)
                 
             case OP_PUSHR:
                 if (i + 1 < commandCount)
@@ -201,18 +135,6 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
                     fprintf(file, "POPR ERROR\n");
                 }
                 break;
-
-            case OP_PUSHH:
-                fprintf(file, "PUSHH\n");
-                break;
-                
-            case OP_POPH:
-                fprintf(file, "POPH\n");
-                break;
-
-            case OP_EXIT:
-                fprintf(file, "EXIT\n");
-                break;
                 
             case OP_PUSH:
                 if (i + 1 < commandCount)
@@ -227,33 +149,17 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
                 }
                 break;
                 
-            case OP_POP:
-                fprintf(file, "POP\n");
-                break;
-                
-            case OP_ADD:
-                fprintf(file, "ADD\n");
-                break;
-                
-            case OP_SUB:
-                fprintf(file, "SUB\n");
-                break;
-                
-            case OP_MUL:
-                fprintf(file, "MUL\n");
-                break;
-                
-            case OP_DIV:
-                fprintf(file, "DIV\n");
-                break;
-
-            case OP_SQRT:
-                fprintf(file, "SQRT\n");
-                break;
-                
-            case OP_PRINT:
-                fprintf(file, "PRINT\n");
-                break;
+            WRITE_NO_ARG_COMMAND(OP_PUSHH)
+            WRITE_NO_ARG_COMMAND(OP_POPH)
+            WRITE_NO_ARG_COMMAND(OP_RET)
+            WRITE_NO_ARG_COMMAND(OP_EXIT)
+            WRITE_NO_ARG_COMMAND(OP_POP)
+            WRITE_NO_ARG_COMMAND(OP_ADD)
+            WRITE_NO_ARG_COMMAND(OP_SUB)
+            WRITE_NO_ARG_COMMAND(OP_MUL)
+            WRITE_NO_ARG_COMMAND(OP_DIV)
+            WRITE_NO_ARG_COMMAND(OP_SQRT)
+            WRITE_NO_ARG_COMMAND(OP_PRINT)
                 
             default:
                 fprintf(file, "UNKNOWN(%d)\n", opcode);

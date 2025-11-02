@@ -5,25 +5,59 @@
 #include "processor.h"
 
 // макрос для обработки команд с одним аргументом
-#define PROCESS_ONE_ARG_COMMAND(opcode, process_func, error_msg)    \
-    case opcode: {                                                  \
-        if (proc.ip + 1 < commandCount)                             \
-        {                                                           \
-            process_func;                                           \
-            proc.ip++;                                              \
-        }                                                           \
-        else                                                        \
-        {                                                           \
-            printf("ERROR: " error_msg "\n");                       \
-        }                                                           \
-        break;                                                      \
+#define PROCESS_ONE_ARG_COMMAND(opcode, process_func, error_msg)                    \
+    case opcode: {                                                                  \
+        if (proc.ip + 1 < commandCount)                                             \
+        {                                                                           \
+            process_func;                                                           \
+            proc.ip++;                                                              \
+        }                                                                           \
+        else                                                                        \
+        {                                                                           \
+            printf("ERROR: " error_msg "\n");                                       \
+        }                                                                           \
+        break;                                                                      \
     }
 
 // макрос для обработки команд без аргументов
-#define PROCESS_NO_ARG_COMMAND(opcode, process_func)                \
-    case opcode: {                                                  \
-        process_func;                                               \
-        break;                                                      \
+#define PROCESS_NO_ARG_COMMAND(opcode, process_func)                                \
+    case opcode: {                                                                  \
+        process_func;                                                               \
+        break;                                                                      \
+    }
+
+// макрос для обработки условных переходов
+#define CASE_COND_JMP_COMMAND(opcode, op_name, condition)                           \
+    case opcode:                                                                    \
+    {                                                                               \
+        if (proc.ip + 1 >= commandCount)                                            \
+        {                                                                           \
+            printf("ERROR: нет адреса после " op_name "\n");                        \
+            return STACK_ERR_DAMAGED;                                               \
+        }                                                                           \
+        StackErr_t err1 = STACK_OK, err2 = STACK_OK;                                \
+        int b = StackPop(&proc.stack, &err1);                                       \
+        int a = StackPop(&proc.stack, &err2);                                       \
+        if (err1 != STACK_OK || err2 != STACK_OK)                                   \
+        {                                                                           \
+            printf("Ошибка " op_name ": невозможно извлечь значения из стека\n");   \
+            return STACK_ERR_DAMAGED;                                               \
+        }                                                                           \
+        if (a condition b)                                                          \
+        {                                                                           \
+            int target = commands[proc.ip + 1];                                     \
+            if (!(0 <= target && target < commandCount))                            \
+            {                                                                       \
+                printf("Ошибка " op_name ": неверный адрес %d\n", target);          \
+                return STACK_ERR_DAMAGED;                                           \
+            }                                                                       \
+            printf(op_name ": %d " #condition " %d, переход к %d\n", a, b, target); \
+            proc.ip = target;                                                       \
+            break;                                                                  \
+        }                                                                           \
+        printf(op_name ": %d !" #condition " %d, переход не выполнен\n", a, b);     \
+        proc.ip++;                                                                  \
+        break;                                                                      \
     }
 
 // сложение верхних элементов стека
@@ -314,239 +348,12 @@ StackErr_t execute_commands(int* commands, int commandCount)
         int opcode = commands[proc.ip];
         switch (opcode)
         {
-            case OP_JE:
-            {
-                if (proc.ip + 1 < commandCount)
-                {
-                    StackErr_t err1, err2;
-                    int b = StackPop(&proc.stack, &err1);
-                    int a = StackPop(&proc.stack, &err2);
-
-                    if (err1 == STACK_OK && err2 == STACK_OK)
-                    {
-                        if (a == b)
-                        {
-                            int target = commands[proc.ip + 1];
-                            if (target >= 0 && target < commandCount)
-                            {
-                                proc.ip = target - 1;
-                                printf("JE: %d == %d, переход к %d\n", a, b, target);
-                            }
-                        }
-                    }
-                    proc.ip++;
-                }
-                else
-                {
-                    printf("ERROR: нет адреса после JE\n");
-                }
-                break;
-            }
-
-            case OP_JNE:
-            {
-                if (proc.ip + 1 < commandCount)
-                {
-                    StackErr_t err1, err2;
-                    int b = StackPop(&proc.stack, &err1);
-                    int a = StackPop(&proc.stack, &err2);
-
-                    if (err1 == STACK_OK && err2 == STACK_OK)
-                    {
-                        if (a != b)
-                        {
-                            int target = commands[proc.ip + 1];
-                            if (target >= 0 && target < commandCount)
-                            {
-                                printf("JNE: %d != %d, переход к %d\n", a, b, target);
-                                proc.ip = target - 1;
-                            }
-                            else
-                            {
-                                printf("Ошибка JNE: неверный адрес %d\n", target);
-                            }
-                        }
-                        else
-                        {
-                            printf("JNE: %d == %d, переход не выполнен\n", a, b);
-                        }
-                    }
-                    else
-                    {
-                        printf("Ошибка JNE: невозможно извлечь значения из стека\n");
-                    }
-                    proc.ip++;
-                }
-                else
-                {
-                    printf("ERROR: нет адреса после JNE\n");
-                }
-                break;
-            }
-
-            case OP_JG:
-            {
-                if (proc.ip + 1 < commandCount)
-                {
-                    StackErr_t err1, err2;
-                    int b = StackPop(&proc.stack, &err1);
-                    int a = StackPop(&proc.stack, &err2);
-        
-                    if (err1 == STACK_OK && err2 == STACK_OK)
-                    {
-                        if (a > b)
-                        {
-                            int target = commands[proc.ip + 1];
-                            if (target >= 0 && target < commandCount)
-                            {
-                                printf("JG: %d > %d, переход к %d\n", a, b, target);
-                                proc.ip = target - 1;
-                            }
-                            else
-                            {
-                                printf("Ошибка JG: неверный адрес %d\n", target);
-                            }
-                        }
-                        else
-                        {
-                            printf("JG: %d <= %d, переход не выполнен\n", a, b);
-                        }
-                    }
-                    else
-                    {
-                        printf("Ошибка JG: невозможно извлечь значения из стека\n");
-                    }
-                    proc.ip++;
-                }
-                else
-                {
-                    printf("ERROR: нет адреса после JG\n");
-                }
-                break;
-            }
-
-            case OP_JL:
-            {
-                if (proc.ip + 1 < commandCount)
-                {
-                    StackErr_t err1, err2;
-                    int b = StackPop(&proc.stack, &err1);
-                    int a = StackPop(&proc.stack, &err2);
-        
-                    if (err1 == STACK_OK && err2 == STACK_OK)
-                    {
-                        if (a < b)
-                        {
-                            int target = commands[proc.ip + 1];
-                            if (target >= 0 && target < commandCount)
-                            {
-                                printf("JL: %d < %d, переход к %d\n", a, b, target);
-                                proc.ip = target - 1;
-                            }
-                            else
-                            {
-                                printf("Ошибка JL: неверный адрес %d\n", target);
-                            }
-                        }
-                        else
-                        {
-                            printf("JL: %d >= %d, переход не выполнен\n", a, b);
-                        }
-                    }
-                    else
-                    {
-                        printf("Ошибка JL: невозможно извлечь значения из стека\n");
-                    }
-                    proc.ip++;
-                }
-                else
-                {
-                    printf("ERROR: нет адреса после JL\n");
-                }
-                break;
-            }
-
-            case OP_JGE:
-            {
-                if (proc.ip + 1 < commandCount)
-                {
-                    StackErr_t err1, err2;
-                    int b = StackPop(&proc.stack, &err1);
-                    int a = StackPop(&proc.stack, &err2);
-        
-                    if (err1 == STACK_OK && err2 == STACK_OK)
-                    {
-                        if (a >= b)
-                        {
-                            int target = commands[proc.ip + 1];
-                            if (target >= 0 && target < commandCount)
-                            {
-                                printf("JGE: %d >= %d, переход к %d\n", a, b, target);
-                                proc.ip = target - 1;
-                            }
-                            else
-                            {
-                                printf("Ошибка JGE: неверный адрес %d\n", target);
-                            }
-                        }
-                        else
-                        {
-                            printf("JGE: %d < %d, переход не выполнен\n", a, b);
-                        }
-                    }
-                    else
-                    {
-                        printf("Ошибка JGE: невозможно извлечь значения из стека\n");
-                    }
-                    proc.ip++;
-                }
-                else
-                {
-                    printf("ERROR: нет адреса после JGE\n");
-                }
-                break;
-            }
-
-            case OP_JLE:
-            {
-                if (proc.ip + 1 < commandCount)
-                {
-                    StackErr_t err1, err2;
-                    int b = StackPop(&proc.stack, &err1);
-                    int a = StackPop(&proc.stack, &err2);
-
-                    if (err1 == STACK_OK && err2 == STACK_OK)
-                    {
-                        if (a <= b)
-                        {
-                            int target = commands[proc.ip + 1];
-                            if (target >= 0 && target < commandCount)
-                            {
-                                printf("JLE: %d <= %d, переход к %d\n", a, b, target);
-                                proc.ip = target - 1;
-                            }
-                            else
-                            {
-                                printf("Ошибка JLE: неверный адрес %d\n", target);
-                            }
-                        }
-                        else
-                        {
-                            printf("JLE: %d > %d, переход не выполнен\n", a, b);
-                        }
-                    }
-                    else
-                    {
-                        printf("Ошибка JLE: невозможно извлечь значения из стека\n");
-                    }
-                    proc.ip++;
-                }
-                else
-                {
-                    printf("ERROR: нет адреса после JLE\n");
-                }
-                break;
-            }
+            CASE_COND_JMP_COMMAND(OP_JE,  "JE",  ==)
+            CASE_COND_JMP_COMMAND(OP_JNE, "JNE", !=)
+            CASE_COND_JMP_COMMAND(OP_JG,  "JG",  > )
+            CASE_COND_JMP_COMMAND(OP_JL,  "JL",  < )
+            CASE_COND_JMP_COMMAND(OP_JGE, "JGE", >=)
+            CASE_COND_JMP_COMMAND(OP_JLE, "JLE", <=)
 
             PROCESS_ONE_ARG_COMMAND(OP_PUSHR, 
                 Register_t reg = (Register_t)commands[proc.ip + 1];
