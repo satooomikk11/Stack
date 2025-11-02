@@ -1,20 +1,6 @@
 #include "structs.h"
 #include "disassembler.h"
 
-// Добавляем реализацию GetRegisterName
-const char* GetRegisterName(Register_t reg)
-{
-    switch (reg)
-    {
-        case REG_RAX: return "RAX";
-        case REG_RBX: return "RBX";
-        case REG_RCX: return "RCX";
-        case REG_RDX: return "RDX";
-        case REG_REX: return "REX";
-        default: return "UNKNOWN";
-    }
-}
-
 // преобразование массива обратно в текст (деассемблер)
 void write_commands_to_file(const char* filename, int* commands, int commandCount)
 {
@@ -95,6 +81,97 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
                 
             case OP_RET:
                 fprintf(file, "RET\n");
+                break;
+
+            case OP_JMP:
+                if (i + 1 < commandCount)
+                {
+                    int target = commands[i + 1];
+                    fprintf(file, "JMP %d\n", target);
+                    i++;
+                }
+                else
+                {
+                    fprintf(file, "JMP ERROR\n");
+                }
+                break;
+                
+            case OP_JE:
+                if (i + 1 < commandCount)
+                {
+                    int target = commands[i + 1];
+                    fprintf(file, "JE %d\n", target);
+                    i++;
+                }
+                else
+                {
+                    fprintf(file, "JE ERROR\n");
+                }
+                break;
+                
+            case OP_JNE:
+                if (i + 1 < commandCount)
+                {
+                    int target = commands[i + 1];
+                    fprintf(file, "JNE %d\n", target);
+                    i++;
+                }
+                else
+                {
+                    fprintf(file, "JNE ERROR\n");
+                }
+                break;
+                
+            case OP_JG:
+                if (i + 1 < commandCount)
+                {
+                    int target = commands[i + 1];
+                    fprintf(file, "JG %d\n", target);
+                    i++;
+                }
+                else
+                {
+                    fprintf(file, "JG ERROR\n");
+                }
+                break;
+                
+            case OP_JL:
+                if (i + 1 < commandCount)
+                {
+                    int target = commands[i + 1];
+                    fprintf(file, "JL %d\n", target);
+                    i++;
+                }
+                else
+                {
+                    fprintf(file, "JL ERROR\n");
+                }
+                break;
+                
+            case OP_JGE:
+                if (i + 1 < commandCount)
+                {
+                    int target = commands[i + 1];
+                    fprintf(file, "JGE %d\n", target);
+                    i++;
+                }
+                else
+                {
+                    fprintf(file, "JGE ERROR\n");
+                }
+                break;
+                
+            case OP_JLE:
+                if (i + 1 < commandCount)
+                {
+                    int target = commands[i + 1];
+                    fprintf(file, "JLE %d\n", target);
+                    i++;
+                }
+                else
+                {
+                    fprintf(file, "JLE ERROR\n");
+                }
                 break;
                 
             case OP_PUSHR:

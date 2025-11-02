@@ -13,19 +13,6 @@ Register_t ParseRegisterName(const char* reg_name)
     return (Register_t)-1;
 }
 
-const char* GetRegisterName(Register_t reg)
-{
-    switch (reg)
-    {
-        case REG_RAX: return "RAX";
-        case REG_RBX: return "RBX";
-        case REG_RCX: return "RCX";
-        case REG_RDX: return "RDX";
-        case REG_REX: return "REX";
-        default: return "UNKNOWN";
-    }
-}
-
 // чтение из файла и преобразование в массив (ассемблер)
 int* read_commands_from_file(const char* filename, int* commandCount)
 {
@@ -111,7 +98,98 @@ int* read_commands_from_file(const char* filename, int* commandCount)
         }
 
         // преобразуем команды в числа
-        if (strncmp(line, "PUSHR ", 6) == 0)
+        if (strncmp(line, "JMP ", 4) == 0)
+        {
+            commands[count++] = OP_JMP;
+            int target = 0;
+            if (sscanf(line + 4, "%d", &target) == 1)
+            {
+                commands[count++] = target;
+            }
+            else
+            {
+                printf("Ошибка: неверный формат адреса в JMP\n");
+            }
+        }
+        else if (strncmp(line, "JE ", 3) == 0)
+        {
+            commands[count++] = OP_JE;
+            int target = 0;
+            if (sscanf(line + 3, "%d", &target) == 1)
+            {
+                commands[count++] = target;
+            }
+            else
+            {
+                printf("Ошибка: неверный формат адреса в JE\n");
+            }
+        }
+        else if (strncmp(line, "JNE ", 4) == 0)
+        {
+            commands[count++] = OP_JNE;
+            int target = 0;
+            if (sscanf(line + 4, "%d", &target) == 1)
+            {
+                commands[count++] = target;
+            }
+            else
+            {
+                printf("Ошибка: неверный формат адреса в JNE\n");
+            }
+        }
+        else if (strncmp(line, "JG ", 3) == 0)
+        {
+            commands[count++] = OP_JG;
+            int target = 0;
+            if (sscanf(line + 3, "%d", &target) == 1)
+            {
+                commands[count++] = target;
+            }
+            else
+            {
+                printf("Ошибка: неверный формат адреса в JG\n");
+            }
+        }
+        else if (strncmp(line, "JL ", 3) == 0)
+        {
+            commands[count++] = OP_JL;
+            int target = 0;
+            if (sscanf(line + 3, "%d", &target) == 1)
+            {
+                commands[count++] = target;
+            }
+            else
+            {
+                printf("Ошибка: неверный формат адреса в JL\n");
+            }
+        }
+        else if (strncmp(line, "JGE ", 4) == 0)
+        {
+            commands[count++] = OP_JGE;
+            int target = 0;
+            if (sscanf(line + 4, "%d", &target) == 1)
+            {
+                commands[count++] = target;
+            }
+            else
+            {
+                printf("Ошибка: неверный формат адреса в JGE\n");
+            }
+        }
+        else if (strncmp(line, "JLE ", 4) == 0)
+        {
+            commands[count++] = OP_JLE;
+            int target = 0;
+            if (sscanf(line + 4, "%d", &target) == 1)
+            {
+                commands[count++] = target;
+            }
+            else
+            {
+                printf("Ошибка: неверный формат адреса в JLE\n");
+            }
+        }
+        else if (strncmp(line, "PUSHR ", 6) == 0)
         {
             const char* reg_name = line + 6;
             Register_t reg = ParseRegisterName(reg_name);

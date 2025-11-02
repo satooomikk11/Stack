@@ -32,7 +32,14 @@ enum OperationCode
     OP_CALL  = 11,
     OP_RET   = 12,
     OP_PUSHH = 13,
-    OP_POPH  = 14
+    OP_POPH  = 14,
+    OP_JMP   = 15,    // безусловный переход
+    OP_JE    = 16,    // переход если равно
+    OP_JNE   = 17,    // переход если не равно
+    OP_JG    = 18,    // переход если больше
+    OP_JL    = 19,    // переход если меньше
+    OP_JGE   = 20,    // переход если больше или равно
+    OP_JLE   = 21     // переход если меньше или равно
 };
 
 // структура для хранения метки
@@ -49,6 +56,19 @@ struct LabelTable
     int count;
     int capacity;
 };
+
+inline const char* GetRegisterName(Register_t reg)
+{
+    switch (reg)
+    {
+        case REG_RAX: return "A";
+        case REG_RBX: return "B";
+        case REG_RCX: return "C";
+        case REG_RDX: return "D";
+        case REG_REX: return "E";
+        default: return "UNKNOWN";
+    }
+}
 
 // инициализация и очистка таблицы меток
 StackErr_t LabelTable_init(LabelTable* table);
