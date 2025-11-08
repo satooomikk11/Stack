@@ -65,12 +65,13 @@ StackErr_t StackAdd(Stack_t *stk)
 {
     if (!stk) return STACK_ERR_NULL_PTR;
     
-    StackErr_t err;
+    StackErr_t err = STACK_OK;
     int b = StackPop(stk, &err);
     if (err != STACK_OK) return err;
     
     int a = StackPop(stk, &err);
-    if (err != STACK_OK) {
+    if (err != STACK_OK)
+    {
         StackPush(stk, b);
         return err;
     }
@@ -84,12 +85,13 @@ StackErr_t StackSub(Stack_t *stk)
 {
     if (!stk) return STACK_ERR_NULL_PTR;
     
-    StackErr_t err;
+    StackErr_t err = STACK_OK;
     int b = StackPop(stk, &err);
     if (err != STACK_OK) return err;
     
     int a = StackPop(stk, &err);
-    if (err != STACK_OK) {
+    if (err != STACK_OK)
+    {
         StackPush(stk, b);
         return err;
     }
@@ -104,12 +106,13 @@ StackErr_t StackMul(Stack_t *stk)
     // StackDump(stk);
     if (!stk) return STACK_ERR_NULL_PTR;
     
-    StackErr_t err;
+    StackErr_t err = STACK_OK;
     int b = StackPop(stk, &err);
     if (err != STACK_OK) return err;
     
     int a = StackPop(stk, &err);
-    if (err != STACK_OK) {
+    if (err != STACK_OK)
+    {
         StackPush(stk, b);
         return err;
     }
@@ -123,7 +126,7 @@ StackErr_t StackDiv(Stack_t *stk)
 {
     if (!stk) return STACK_ERR_NULL_PTR;
     
-    StackErr_t err;
+    StackErr_t err = STACK_OK;
     int b = StackPop(stk, &err);
     if (err != STACK_OK) return err;
     
@@ -135,7 +138,8 @@ StackErr_t StackDiv(Stack_t *stk)
     }
 
     int a = StackPop(stk, &err);
-    if (err != STACK_OK) {
+    if (err != STACK_OK)
+    {
         StackPush(stk, b);
         return err;
     }
@@ -149,7 +153,7 @@ StackErr_t StackSqrt(Stack_t *stk)
 {
     if (!stk) return STACK_ERR_NULL_PTR;
     
-    StackErr_t err;
+    StackErr_t err = STACK_OK;
     int a = StackPop(stk, &err);
     if (err != STACK_OK) return err;
 
@@ -187,7 +191,7 @@ StackErr_t StackPushH(Stack_t *stk, RAM* ram)
 {
     if (!stk || !ram) return STACK_ERR_NULL_PTR;
     
-    StackErr_t err;
+    StackErr_t err = STACK_OK;
     int address = StackPop(stk, &err);
     if (err != STACK_OK) return err;
     
@@ -203,10 +207,10 @@ StackErr_t StackPopH(Stack_t *stk, RAM* ram)
 {
     if (!stk || !ram) return STACK_ERR_NULL_PTR;
     
-    StackErr_t err;
+    StackErr_t err = STACK_OK;
     int value = StackPop(stk, &err);
     if (err != STACK_OK) return err;
-    
+    // -svg
     int address = StackPop(stk, &err);
     if (err != STACK_OK)
     {
@@ -420,7 +424,7 @@ StackErr_t execute_commands(int* commands, int commandCount)
             )
             
             PROCESS_NO_ARG_COMMAND(OP_POP,
-                StackErr_t pop_err;
+                StackErr_t pop_err = STACK_OK;
                 int popped = StackPop(&proc.stack, &pop_err);
                 if (pop_err == STACK_OK)
                 {

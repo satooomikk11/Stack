@@ -34,7 +34,7 @@ void write_commands_to_file(const char* filename, int* commands, int commandCoun
     
     // создаем обратную таблицу меток для красивого вывода
     int labelCount = 0;
-    int labelPositions[100];
+    int labelPositions[100] = {};
     
     // сначала находим все позиции, на которые ссылаются CALL команды
     for (int i = 0; i < commandCount; i++)

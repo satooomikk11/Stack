@@ -1,6 +1,15 @@
 #include "structs.h"
 #include "processor.h"
 
+/*
+// ПРОЦЕССОР
+StackErr_t result = execute_commands(commands, commandCount);
+if (result != STACK_OK)
+{
+    printf("Ошибка выполнения команд: %d\n", result);
+}
+*/
+
 int main()
 {
     const char* inputFile = "compiled_commands.bin";
@@ -14,9 +23,10 @@ int main()
     }
     
     int commandCount = 0;
+    // читаем кол-во команд
     fread(&commandCount, sizeof(int), 1, binFile);
     
-    int* commands = (int*)malloc(commandCount * sizeof(int));
+    int* commands = (int*)calloc(commandCount, sizeof(int));
     if (!commands)
     {
         printf("Ошибка выделения памяти\n");

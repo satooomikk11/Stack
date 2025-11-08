@@ -53,7 +53,7 @@ int* read_commands_from_file(const char* filename, int* commandCount)
     
     int capacity = INITIAL_COMMAND_CAPACITY;
     int count = 0;
-    char line[MAX_LINE_LENGTH];
+    char line[MAX_LINE_LENGTH] = "";
     
     // ПЕРВЫЙ ПРОХОД: сбор меток и подсчёт КОМАНД (без меток)
     LabelTable labelTable;

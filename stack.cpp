@@ -104,7 +104,7 @@ StackErr_t StackPopReg(Stack_t *stk, Register_t reg)
         return STACK_ERR_INVALID_REGISTER;
     }
     
-    StackErr_t err;
+    StackErr_t err = STACK_OK;
     int value = StackPop(stk, &err);
     
     if (err == STACK_OK)
@@ -140,11 +140,13 @@ StackErr_t StackDestroy(Stack_t *stk)
 
 StackErr_t StackVerify(const Stack_t *stk)
 {
-    if (!stk) {
+    if (!stk)
+    {
         return STACK_ERR_NULL_PTR;
     }
     
-    if (!stk->data || stk->size < 0 || stk->capacity <= 0 || stk->size > stk->capacity) {
+    if (!stk->data || stk->size < 0 || stk->capacity <= 0 || stk->size > stk->capacity)
+    {
         return STACK_ERR_DAMAGED;
     }
     
@@ -154,8 +156,7 @@ StackErr_t StackVerify(const Stack_t *stk)
 void StackDump(const Stack_t *stk)
 {
     printf("StackDump called\n",
-           "Stack[%p]\n", (void*)stk,
-           "{\n");
+           "Stack[%p]\n{\n", (void*)stk);
     
     printf("  size     = %d\n", stk->size);
     printf("  capacity = %d\n", stk->capacity);
@@ -169,6 +170,6 @@ void StackDump(const Stack_t *stk)
         printf("    %s[%d] = %d\n", marker, i, stk->data[i]);
     }
     
-    printf("  }\n",
+    printf("  }\n"
            "}\n\n");
 }

@@ -6,7 +6,7 @@ int main()
     const char* inputFile = "compiled_commands.bin";
     const char* outputFile = "output_commands.txt";
     
-    // Ччение скомпилированных команд из бинарного файла
+    // чтение скомпилированных команд из бинарного файла
     FILE* binFile = fopen(inputFile, "rb");
     if (!binFile)
     {
@@ -17,7 +17,7 @@ int main()
     int commandCount = 0;
     fread(&commandCount, sizeof(int), 1, binFile);
     
-    int* commands = (int*)malloc(commandCount * sizeof(int));
+    int* commands = (int*)calloc(commandCount, sizeof(int));
     if (!commands)
     {
         printf("Ошибка выделения памяти\n");
